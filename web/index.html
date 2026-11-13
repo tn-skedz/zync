@@ -1,0 +1,363 @@
+<!doctype html>
+<!-- language: HTML, file: web/index.html -->
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OpenWave</title>
+<style>
+  :root{
+    --bg:#080b13; --panel:rgba(255,255,255,.045); --line:rgba(255,255,255,.09);
+    --text:#e8ecf6; --muted:#8b93a7; --accent:#7c5cff; --accent2:#22d3ee;
+    --radius:16px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0; font-family:"Inter",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    color:var(--text); background:var(--bg); overflow:hidden;
+    background-image:
+      radial-gradient(60vw 40vh at 10% -10%, rgba(124,92,255,.20), transparent 60%),
+      radial-gradient(50vw 35vh at 110% 10%, rgba(34,211,238,.14), transparent 60%);
+    display:grid; grid-template-rows:auto 1fr auto; grid-template-columns:1fr 300px;
+    grid-template-areas:"head head" "main side" "player player";
+  }
+  header{grid-area:head; display:flex; align-items:center; gap:16px; padding:18px 22px;
+    border-bottom:1px solid var(--line); backdrop-filter:blur(12px)}
+  .brand{font-weight:700; letter-spacing:-.4px; font-size:19px; display:flex; align-items:center; gap:10px}
+  .brand .dot{width:10px; height:10px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2));
+    box-shadow:0 0 14px var(--accent)}
+  #searchForm{flex:1; max-width:620px; margin-left:auto}
+  #q{width:100%; padding:12px 16px; border-radius:12px; color:var(--text);
+    border:1px solid var(--line); background:var(--panel); font-size:14px; outline:none;
+    transition:border-color .18s, box-shadow .18s}
+  #q:focus{border-color:rgba(124,92,255,.55); box-shadow:0 0 0 3px rgba(124,92,255,.14)}
+
+  main{grid-area:main; overflow-y:auto; padding:22px}
+  main::-webkit-scrollbar,aside::-webkit-scrollbar{width:10px}
+  main::-webkit-scrollbar-thumb,aside::-webkit-scrollbar-thumb{
+    background:rgba(255,255,255,.09); border-radius:8px}
+  .hint{color:var(--muted); font-size:13px; margin-bottom:14px}
+  .grid{display:grid; gap:14px; grid-template-columns:repeat(auto-fill,minmax(168px,1fr))}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:10px; cursor:pointer; transition:transform .16s, border-color .16s, background .16s;
+    position:relative; overflow:hidden}
+  .card:hover{transform:translateY(-3px); border-color:rgba(124,92,255,.5);
+    background:rgba(124,92,255,.08)}
+  .card.active{border-color:var(--accent); box-shadow:0 0 0 2px rgba(124,92,255,.25) inset}
+  .art{position:relative; width:100%; aspect-ratio:1; border-radius:12px; overflow:hidden;
+    background:linear-gradient(135deg,#1a2140,#0f1428)}
+  .art img{width:100%; height:100%; object-fit:cover; display:block}
+  .badge{position:absolute; top:8px; left:8px; font-size:10px; padding:3px 7px;
+    border-radius:999px; background:rgba(0,0,0,.55); border:1px solid var(--line);
+    color:#cfd5e6; text-transform:uppercase; letter-spacing:.4px}
+  .card h3{font-size:13px; margin:10px 2px 4px; line-height:1.3; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .card p{font-size:12px; margin:0 2px; color:var(--muted);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .empty{color:var(--muted); text-align:center; padding:60px 20px; font-size:14px}
+
+  aside{grid-area:side; border-left:1px solid var(--line); padding:22px 16px;
+    overflow-y:auto; background:rgba(255,255,255,.015)}
+  aside h2{font-size:12px; text-transform:uppercase; letter-spacing:1.2px;
+    color:var(--muted); margin:0 0 14px}
+  .qitem{display:flex; gap:10px; align-items:center; padding:8px; border-radius:10px;
+    cursor:pointer; transition:background .15s}
+  .qitem:hover{background:rgba(255,255,255,.05)}
+  .qitem.active{background:rgba(124,92,255,.14)}
+  .qitem img{width:38px; height:38px; border-radius:8px; object-fit:cover; background:#182034}
+  .qitem .meta{min-width:0}
+  .qitem .meta b{display:block; font-size:12px; font-weight:600;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .qitem .meta span{font-size:11px; color:var(--muted);
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:block}
+
+  footer{grid-area:player; border-top:1px solid var(--line);
+    background:rgba(10,14,24,.86); backdrop-filter:blur(16px);
+    display:grid; grid-template-columns:260px 1fr 200px; gap:18px;
+    align-items:center; padding:14px 22px}
+  .now{display:flex; gap:12px; align-items:center; min-width:0}
+  .now img{width:52px; height:52px; border-radius:10px; object-fit:cover; background:#182034}
+  .now .t{min-width:0}
+  .now b{display:block; font-size:13px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
+  .now span{font-size:12px; color:var(--muted); white-space:nowrap; overflow:hidden;
+    text-overflow:ellipsis; display:block}
+  .center{display:flex; flex-direction:column; gap:8px}
+  .controls{display:flex; align-items:center; justify-content:center; gap:12px}
+  button{background:none; border:none; color:var(--text); cursor:pointer; padding:6px;
+    border-radius:10px; display:grid; place-items:center; transition:background .15s}
+  button:hover{background:rgba(255,255,255,.07)}
+  #playBtn{width:42px; height:42px; border-radius:50%;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#0a0e1a}
+  #playBtn:hover{filter:brightness(1.1)}
+  button.toggle{opacity:.45}
+  button.toggle.on{opacity:1; color:var(--accent2)}
+
+  .row{display:flex; align-items:center; gap:10px; font-size:11px; color:var(--muted)}
+  .seek-wrap{position:relative; height:6px; border-radius:3px;
+    background:rgba(255,255,255,.10); flex:1}
+  .seek-buffered,.seek-played{position:absolute; top:0; bottom:0; left:0; border-radius:3px}
+  .seek-buffered{background:rgba(255,255,255,.18); width:0}
+  .seek-played{background:linear-gradient(90deg,var(--accent),var(--accent2)); width:0}
+  .seek-wrap input{position:absolute; inset:-7px 0; width:100%; opacity:0; cursor:pointer; margin:0}
+  .right{display:flex; align-items:center; gap:10px; justify-content:flex-end}
+  .right input[type=range]{width:90px; accent-color:var(--accent)}
+  @media (max-width:900px){
+    body{grid-template-columns:1fr; grid-template-areas:"head" "main" "player"}
+    aside{display:none}
+    footer{grid-template-columns:1fr; gap:10px}
+    .now{display:none}
+    .right{justify-content:center}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand"><span class="dot"></span> OpenWave</div>
+  <form id="searchForm" autocomplete="off">
+    <input id="q" placeholder="Search Tamil, Hindi, English, anything…" />
+  </form>
+</header>
+
+<main>
+  <div class="hint" id="hint">Type to search — JioSaavn + Audius + YouTube, merged and de-duplicated.</div>
+  <div class="grid" id="results"></div>
+</main>
+
+<aside>
+  <h2>Queue</h2>
+  <div id="queue"></div>
+</aside>
+
+<footer>
+  <div class="now">
+    <img id="npCover" alt="" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'/%3E"/>
+    <div class="t">
+      <b id="npTitle">Nothing playing</b>
+      <span id="npArtist">—</span>
+    </div>
+  </div>
+
+  <div class="center">
+    <div class="controls">
+      <button id="shuffleBtn" class="toggle" title="Shuffle">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3h5v5h-2V6.4l-4.3 4.3-1.4-1.4L17.6 5H16V3zM3 5h4.2l3.1 3.1-1.4 1.4L6.4 7H3V5zm14.6 9.6L21 18h-2v-2h-2v2h-2v2h5v-5h-2v.6zM3 17h3.4l9.6-9.6 1.4 1.4L7.8 19H3v-2z"/></svg>
+      </button>
+      <button id="prevBtn" title="Previous">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6v12l-9-6 9-6zM5 6h2v12H5z"/></svg>
+      </button>
+      <button id="playBtn" title="Play">
+        <svg id="playIcon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <button id="nextBtn" title="Next">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18V6l9 6-9 6zM17 6h2v12h-2z"/></svg>
+      </button>
+      <button id="repeatBtn" class="toggle" title="Repeat">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg>
+      </button>
+    </div>
+    <div class="row">
+      <span id="tCur">0:00</span>
+      <div class="seek-wrap">
+        <div class="seek-buffered" id="seekBuffered"></div>
+        <div class="seek-played" id="seekPlayed"></div>
+        <input type="range" id="seek" min="0" max="100" step="0.1" value="0"/>
+      </div>
+      <span id="tDur">0:00</span>
+    </div>
+  </div>
+
+  <div class="right">
+    <span id="volIcon" style="color:var(--muted); font-size:12px">VOL</span>
+    <input type="range" id="vol" min="0" max="100" value="80"/>
+  </div>
+</footer>
+
+<audio id="audio" preload="none"></audio>
+
+<script>
+const $ = s => document.querySelector(s);
+const audio = $("#audio");
+const state = { queue: [], index: -1, shuffle: false, repeat: 0 };
+
+const fmt = s => {
+  if (!isFinite(s)) return "0:00";
+  const m = Math.floor(s / 60), x = Math.floor(s % 60);
+  return m + ":" + String(x).padStart(2, "0");
+};
+
+const SOURCE_LABEL = { jiosaavn: "Saavn", audius: "Audius", youtube: "YT" };
+const FALLBACK_ART = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Crect width='200' height='200' fill='%23141b30'/%3E%3Ccircle cx='100' cy='100' r='34' fill='%232b3760'/%3E%3Ccircle cx='100' cy='100' r='10' fill='%23080b13'/%3E%3C/svg%3E";
+
+function renderResults(items) {
+  const host = $("#results");
+  host.innerHTML = "";
+  if (!items.length) {
+    host.innerHTML = '<div class="empty">No results. Try another spelling or artist name.</div>';
+    return;
+  }
+  items.forEach((t, i) => {
+    const c = document.createElement("div");
+    c.className = "card";
+    c.dataset.i = i;
+    c.innerHTML = `
+      <div class="art">
+        <img src="${t.cover || FALLBACK_ART}" onerror="this.src='${FALLBACK_ART}'"/>
+        <span class="badge">${SOURCE_LABEL[t.source] || t.source}</span>
+      </div>
+      <h3 title="${escapeAttr(t.title)}">${escapeHtml(t.title)}</h3>
+      <p title="${escapeAttr(t.artist)}">${escapeHtml(t.artist)}</p>`;
+    c.onclick = () => { state.queue = items.slice(); playAt(i); };
+    host.appendChild(c);
+  });
+}
+
+function renderQueue() {
+  const host = $("#queue");
+  host.innerHTML = "";
+  state.queue.forEach((t, i) => {
+    const d = document.createElement("div");
+    d.className = "qitem" + (i === state.index ? " active" : "");
+    d.innerHTML = `
+      <img src="${t.cover || FALLBACK_ART}" onerror="this.src='${FALLBACK_ART}'"/>
+      <div class="meta"><b>${escapeHtml(t.title)}</b><span>${escapeHtml(t.artist)}</span></div>`;
+    d.onclick = () => playAt(i);
+    host.appendChild(d);
+  });
+}
+
+function escapeHtml(s = "") {
+  return s.replace(/[&<>"']/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;",
+    '"': "&quot;", "'": "&#39;" }[m]));
+}
+const escapeAttr = escapeHtml;
+
+function playAt(i) {
+  if (i < 0 || i >= state.queue.length) return;
+  state.index = i;
+  const t = state.queue[i];
+  audio.src = t.play;
+  audio.play().catch(() => {});
+  $("#npTitle").textContent = t.title;
+  $("#npArtist").textContent = t.artist;
+  $("#npCover").src = t.cover || FALLBACK_ART;
+  setPlayIcon(true);
+  document.querySelectorAll(".card").forEach(el =>
+    el.classList.toggle("active", Number(el.dataset.i) === i));
+  renderQueue();
+}
+
+function setPlayIcon(playing) {
+  $("#playIcon").innerHTML = playing
+    ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>'
+    : '<path d="M8 5v14l11-7z"/>';
+}
+
+function togglePlay() {
+  if (!audio.src) return;
+  if (audio.paused) { audio.play().catch(() => {}); setPlayIcon(true); }
+  else { audio.pause(); setPlayIcon(false); }
+}
+
+function next() {
+  if (!state.queue.length) return;
+  const i = state.shuffle
+    ? Math.floor(Math.random() * state.queue.length)
+    : (state.index + 1) % state.queue.length;
+  playAt(i);
+}
+
+function prev() {
+  if (!state.queue.length) return;
+  if (audio.currentTime > 3) { audio.currentTime = 0; return; }
+  const i = (state.index - 1 + state.queue.length) % state.queue.length;
+  playAt(i);
+}
+
+audio.addEventListener("ended", () => {
+  if (state.repeat === 2) { audio.currentTime = 0; audio.play().catch(() => {}); return; }
+  if (state.repeat === 1) { next(); return; }
+  if (state.index < state.queue.length - 1) next();
+  else setPlayIcon(false);
+});
+
+audio.addEventListener("timeupdate", () => {
+  if (!audio.duration) return;
+  const pct = (audio.currentTime / audio.duration) * 100;
+  $("#seek").value = pct;
+  $("#seekPlayed").style.width = pct + "%";
+  $("#tCur").textContent = fmt(audio.currentTime);
+  $("#tDur").textContent = fmt(audio.duration);
+});
+
+audio.addEventListener("progress", () => {
+  if (!audio.duration || !audio.buffered.length) return;
+  const end = audio.buffered.end(audio.buffered.length - 1);
+  $("#seekBuffered").style.width = (end / audio.duration) * 100 + "%";
+});
+
+$("#seek").addEventListener("input", e => {
+  if (!audio.duration) return;
+  audio.currentTime = (e.target.value / 100) * audio.duration;
+});
+
+$("#vol").addEventListener("input", e => {
+  audio.volume = e.target.value / 100;
+});
+audio.volume = 0.8;
+
+$("#playBtn").onclick = togglePlay;
+$("#nextBtn").onclick = next;
+$("#prevBtn").onclick = prev;
+
+$("#shuffleBtn").onclick = () => {
+  state.shuffle = !state.shuffle;
+  $("#shuffleBtn").classList.toggle("on", state.shuffle);
+};
+
+$("#repeatBtn").onclick = () => {
+  state.repeat = (state.repeat + 1) % 3;
+  const b = $("#repeatBtn");
+  b.classList.toggle("on", state.repeat > 0);
+  b.title = ["Repeat off", "Repeat all", "Repeat one"][state.repeat];
+};
+
+let debounce;
+$("#q").addEventListener("input", e => {
+  const q = e.target.value.trim();
+  clearTimeout(debounce);
+  if (q.length < 2) return;
+  debounce = setTimeout(() => runSearch(q), 300);
+});
+
+$("#searchForm").addEventListener("submit", e => {
+  e.preventDefault();
+  const q = $("#q").value.trim();
+  if (q.length >= 2) runSearch(q);
+});
+
+async function runSearch(q) {
+  $("#hint").textContent = `Searching "${q}"…`;
+  try {
+    const r = await fetch(`/api/search?q=${encodeURIComponent(q)}&limit=24`);
+    const data = await r.json();
+    $("#hint").textContent = `${data.count} results — tap to play`;
+    renderResults(data.results);
+  } catch {
+    $("#hint").textContent = "Search failed — backend reachable?";
+  }
+}
+
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "INPUT") return;
+  if (e.code === "Space") { e.preventDefault(); togglePlay(); }
+  if (e.code === "ArrowRight") audio.currentTime += 5;
+  if (e.code === "ArrowLeft") audio.currentTime -= 5;
+  if (e.code === "KeyN") next();
+  if (e.code === "KeyP") prev();
+});
+</script>
+</body>
+</html>

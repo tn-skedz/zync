@@ -1,0 +1,5 @@
+opts = {
+    "quiet": True, "skip_download": True, 
+    "extract_flat": True, "noplaylist": True,
+    "cookiefile": "cookies.txt" # <--- இதை ஆட் பண்ணு
+}
